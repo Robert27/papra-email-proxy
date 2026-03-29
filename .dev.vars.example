@@ -1,0 +1,9 @@
+# Copy to `.dev.vars` for `wrangler dev` (do not commit `.dev.vars`).
+# Values here override `[vars]` in wrangler.toml for the same keys.
+
+WEBHOOK_URL=https://your-papra-host.example/api/intake-emails/ingest
+WEBHOOK_SECRET=your-intake-webhook-secret
+
+# Optional: Cloudflare Access service token (Papra behind Zero Trust)
+CF_ACCESS_CLIENT_ID=
+CF_ACCESS_CLIENT_SECRET=
