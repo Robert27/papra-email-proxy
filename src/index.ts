@@ -19,11 +19,13 @@ async function parseEmail({
   const emailBuffer = await rawEmail.arrayBuffer();
   const email = await parser.parse(emailBuffer);
 
+  const parsedFrom = email.from;
+
   return {
     email: {
       ...email,
       originalTo: email.to ?? [],
-      originalFrom: email.from,
+      originalFrom: parsedFrom ?? { address: realFrom, name: '' },
       to: [
         {
           address: realTo,
@@ -32,7 +34,7 @@ async function parseEmail({
       ],
       from: {
         address: realFrom,
-        name: email.from.address === realFrom ? email.from.name : '',
+        name: parsedFrom?.address === realFrom ? (parsedFrom.name ?? '') : '',
       },
     },
   };
@@ -71,37 +73,67 @@ function createAccessFetch(env: Env): typeof fetch | undefined {
   };
 }
 
+/** Prefer Workers' native `fetch`; `@owlrelay/webhook` defaults to `ofetch`, which can mis-handle large POST bodies. */
+function resolveWebhookFetch(env: Env): typeof fetch {
+  return createAccessFetch(env) ?? ((input, init) => fetch(input, init));
+}
+
+function serializeError(error: unknown) {
+  if (error instanceof Error) {
+    return { name: error.name, message: error.message, stack: error.stack };
+  }
+  return { message: String(error) };
+}
+
 const logger = createLogger({ namespace: 'email-proxy' });
 const createRequestId = ({ now = new Date() }: { now?: Date } = {}) => `req_${now.getTime()}${Math.random().toString(36).substring(2, 15)}`;
 
 export default {
   async email(message: ForwardableEmailMessage, env: Env): Promise<void> {
     const requestId = createRequestId();
-    const { webhookUrl, webhookSecret } = parseConfig({ env });
-    const { email } = await parseEmail({
-      rawMessage: message.raw,
-      realTo: message.to,
-      realFrom: message.from,
-    });
-
-    logger.info({
-      from: email.from,
-      originalFrom: email.originalFrom,
-      to: email.to,
-      originalTo: email.originalTo,
-      requestId,
-    }, 'Received email');
 
     try {
-      await triggerWebhook({
+      const { webhookUrl, webhookSecret } = parseConfig({ env });
+      const { email } = await parseEmail({
+        rawMessage: message.raw,
+        realTo: message.to,
+        realFrom: message.from,
+      });
+
+      logger.info({
+        from: email.from,
+        originalFrom: email.originalFrom,
+        to: email.to,
+        originalTo: email.originalTo,
+        requestId,
+        rawSize: message.rawSize,
+      }, 'Received email');
+
+      const response = await triggerWebhook({
         email,
         webhookUrl,
         webhookSecret,
-        httpClient: createAccessFetch(env),
+        httpClient: resolveWebhookFetch(env),
       });
+
+      if (!response.ok) {
+        const bodyPreview = await response.text().then(
+          t => t.slice(0, 500),
+          () => '',
+        );
+        throw new Error(
+          `Webhook HTTP ${response.status} ${response.statusText}${bodyPreview ? `: ${bodyPreview}` : ''}`,
+        );
+      }
+
       logger.info({ requestId }, 'Webhook triggered successfully');
     } catch (error) {
-      logger.error({ error, requestId }, 'Failed to trigger webhook');
+      logger.error({
+        requestId,
+        rcptTo: message.to,
+        rawSize: message.rawSize,
+        ...serializeError(error),
+      }, 'Email worker failed');
       throw error;
     }
   },
