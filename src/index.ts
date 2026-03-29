@@ -88,7 +88,17 @@ function serializeError(error: unknown) {
 const logger = createLogger({ namespace: 'email-proxy' });
 const createRequestId = ({ now = new Date() }: { now?: Date } = {}) => `req_${now.getTime()}${Math.random().toString(36).substring(2, 15)}`;
 
+const HTTP_ONLY_BODY
+  = 'not serving HTTP';
+
 export default {
+  async fetch(_request: Request): Promise<Response> {
+    return new Response(HTTP_ONLY_BODY, {
+      status: 200,
+      headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+    });
+  },
+
   async email(message: ForwardableEmailMessage, env: Env): Promise<void> {
     const requestId = createRequestId();
 
