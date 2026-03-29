@@ -1,5 +1,6 @@
-# Copy to `.dev.vars` for `wrangler dev` (do not commit `.dev.vars`).
-# Values here override `[vars]` in wrangler.toml for the same keys.
+# Copy to `.dev.vars` for `wrangler dev` only (do not commit `.dev.vars`).
+# Production: set the same keys in the Cloudflare dashboard (or via `wrangler secret put` for secrets).
+# Nothing in wrangler.toml should duplicate these — deploy would overwrite dashboard vars.
 
 WEBHOOK_URL=https://your-papra-host.example/api/intake-emails/ingest
 WEBHOOK_SECRET=your-intake-webhook-secret

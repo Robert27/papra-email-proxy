@@ -2,12 +2,9 @@ name = "papra-email-proxy"
 main = "src/index.ts"
 compatibility_date = "2025-01-22"
 
-# Local dev defaults (wrangler dev). Override any key in `.dev.vars` without committing secrets.
-# Required for the worker: also set WEBHOOK_SECRET in `.dev.vars` (or `wrangler secret put WEBHOOK_SECRET` for deploy).
-# Optional Access: set CF_ACCESS_CLIENT_SECRET in `.dev.vars` when using CF_ACCESS_CLIENT_ID.
-[vars]
-WEBHOOK_URL = "https://your-papra-host.example/api/intake-emails/ingest"
-CF_ACCESS_CLIENT_ID = ""
+# Do not put WEBHOOK_URL / Access vars here: `wrangler deploy` would push them to production
+# and overwrite the values you set in the Cloudflare dashboard.
+# Local dev: copy `.dev.vars.example` → `.dev.vars` (gitignored) and run `wrangler dev`.
 
 [observability]
 
