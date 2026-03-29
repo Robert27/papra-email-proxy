@@ -1,0 +1,47 @@
+{
+  "name": "papra-email-proxy",
+  "type": "module",
+  "version": "1.0.3",
+  "packageManager": "pnpm@9.11.0",
+  "description": "Email to HTTP proxy for Papra document ingestion",
+  "author": "Corentin Thomasset <corentinth@proton.me> (https://corentin.tech)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/papra-hq/email-proxy"
+  },
+  "bugs": {
+    "url": "https://github.com/papra-hq/email-proxy/issues"
+  },
+  "keywords": [
+    "email",
+    "proxy",
+    "papra",
+    "document",
+    "ingestion",
+    "cloudflare",
+    "workers"
+  ],
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "typecheck": "tsc --noEmit",
+    "build": "wrangler build",
+    "release": "bumpp --commit --tag --push"
+  },
+  "dependencies": {
+    "@crowlog/logger": "^2.2.2",
+    "@owlrelay/webhook": "^0.0.2",
+    "postal-mime": "^2.4.1"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^3.16.0",
+    "@cloudflare/workers-types": "^4.20250121.0",
+    "bumpp": "^10.0.1",
+    "eslint": "^9.18.0",
+    "typescript": "^5.7.3",
+    "wrangler": "^3.111.0"
+  }
+}
