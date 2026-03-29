@@ -52,6 +52,25 @@ function parseConfig({ env }: { env: Env }) {
   };
 }
 
+/**
+ * When both Access env vars are set, returns a fetch that adds Cloudflare Zero Trust
+ * service-token headers so the webhook can reach an Access-protected origin.
+ */
+function createAccessFetch(env: Env): typeof fetch | undefined {
+  const id = env.CF_ACCESS_CLIENT_ID;
+  const secret = env.CF_ACCESS_CLIENT_SECRET;
+  if (!id || !secret) {
+    return undefined;
+  }
+
+  return (input, init) => {
+    const headers = new Headers(init?.headers);
+    headers.set('CF-Access-Client-Id', id);
+    headers.set('CF-Access-Client-Secret', secret);
+    return fetch(input, { ...init, headers });
+  };
+}
+
 const logger = createLogger({ namespace: 'email-proxy' });
 const createRequestId = ({ now = new Date() }: { now?: Date } = {}) => `req_${now.getTime()}${Math.random().toString(36).substring(2, 15)}`;
 
@@ -74,7 +93,12 @@ export default {
     }, 'Received email');
 
     try {
-      await triggerWebhook({ email, webhookUrl, webhookSecret });
+      await triggerWebhook({
+        email,
+        webhookUrl,
+        webhookSecret,
+        httpClient: createAccessFetch(env),
+      });
       logger.info({ requestId }, 'Webhook triggered successfully');
     } catch (error) {
       logger.error({ error, requestId }, 'Failed to trigger webhook');
