@@ -22,7 +22,7 @@ importers:
         specifier: ^2.5.4
         version: 2.5.4
       '@vitest/coverage-v8':
-        specifier: ^3.2.4
+        specifier: ^3.2.7
         version: 3.2.7(vitest@3.2.7(jiti@2.7.0)(yaml@2.9.0))
       bumpp:
         specifier: ^11.1.0
@@ -31,7 +31,7 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
       vitest:
-        specifier: ^3.2.4
+        specifier: ^3.2.7
         version: 3.2.7(jiti@2.7.0)(yaml@2.9.0)
       wrangler:
         specifier: ^4.112.0
