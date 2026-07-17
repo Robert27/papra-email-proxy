@@ -9,11 +9,23 @@
   "labels": ["dependencies"],
   "dependencyDashboard": true,
   "rangeStrategy": "bump",
+  "minimumReleaseAge": "1 day",
+  "internalChecksFilter": "strict",
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 6am on monday"]
   },
   "packageRules": [
+    {
+      "description": "Lock file maintenance is not tied to a single package release",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Match pnpm minimumReleaseAge default (1440 minutes / 24 hours)",
+      "matchDatasources": ["npm"],
+      "minimumReleaseAge": "1 day"
+    },
     {
       "description": "Group GitHub Actions updates with ci(deps) commits",
       "matchManagers": ["github-actions"],
