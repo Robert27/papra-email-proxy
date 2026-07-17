@@ -33,10 +33,10 @@ Run `pnpm lint`, `pnpm typecheck`, `pnpm test:coverage`, and `pnpm build` before
 Email Routing → Worker.email() → parseEmail() → triggerWebhook() → Papra /api/intake-emails/ingest
 ```
 
-1. **`parseEmail`** — parses raw MIME with `postal-mime`, normalizes `from`/`to`, preserves `originalFrom` / `originalTo`.
-2. **`toWebhookEmail`** — maps `postal-mime` types to `@owlrelay/webhook` expectations (required `from`, `Uint8Array` → `ArrayBuffer` for attachments).
-3. **`resolveWebhookFetch`** — uses Workers native `fetch` (not `ofetch`) and optionally wraps it with Access headers.
-4. **`fetch` handler** — returns a static response; HTTP is not used for ingestion.
+1. **`parseEmail`** - parses raw MIME with `postal-mime`, normalizes `from`/`to`, preserves `originalFrom` / `originalTo`.
+2. **`toWebhookEmail`** - maps `postal-mime` types to `@owlrelay/webhook` expectations (required `from`, `Uint8Array` → `ArrayBuffer` for attachments).
+3. **`resolveWebhookFetch`** - uses Workers native `fetch` (not `ofetch`) and optionally wraps it with Access headers.
+4. **`fetch` handler** - returns a static response; HTTP is not used for ingestion.
 
 ## Environment variables
 
@@ -48,7 +48,7 @@ Email Routing → Worker.email() → parseEmail() → triggerWebhook() → Papra
 | `CF_ACCESS_CLIENT_SECRET` | no | Access service token secret |
 
 - Local dev: copy `.dev.vars.example` → `.dev.vars` (gitignored).
-- **Do not** add secrets or env-specific URLs to `wrangler.toml` — deploy would overwrite dashboard values.
+- **Do not** add secrets or env-specific URLs to `wrangler.toml` - deploy would overwrite dashboard values.
 
 ## Code conventions
 
