@@ -1,8 +1,40 @@
-import type { Address, Email } from 'postal-mime';
-import type { Env } from './types';
 import { createLogger } from '@crowlog/logger';
 import { triggerWebhook } from '@owlrelay/webhook';
+import type { Address, Email } from 'postal-mime';
 import PostalMime from 'postal-mime';
+import type { Env } from './types';
+
+type ParsedEmail = Omit<Email, 'from'> & {
+  from: Address;
+  originalTo: Address[];
+  originalFrom: Address;
+};
+
+type WebhookEmail = Parameters<typeof triggerWebhook>[0]['email'];
+
+function toWebhookAttachmentContent(content: string | ArrayBuffer | Uint8Array): string | ArrayBuffer {
+  if (typeof content === 'string' || content instanceof ArrayBuffer) {
+    return content;
+  }
+
+  return new Uint8Array(content).buffer;
+}
+
+function toWebhookEmail(email: ParsedEmail): WebhookEmail {
+  return {
+    from: email.from,
+    to: email.to,
+    cc: email.cc,
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
+    attachments: email.attachments.map((attachment) => ({
+      filename: attachment.filename,
+      mimeType: attachment.mimeType,
+      content: toWebhookAttachmentContent(attachment.content),
+    })),
+  };
+}
 
 async function parseEmail({
   rawMessage,
@@ -12,7 +44,7 @@ async function parseEmail({
   rawMessage: ReadableStream<Uint8Array>;
   realTo: string;
   realFrom: string;
-}): Promise<{ email: Email & { originalTo: Address[]; originalFrom: Address } }> {
+}): Promise<{ email: ParsedEmail }> {
   const rawEmail = new Response(rawMessage);
   const parser = new PostalMime();
 
@@ -29,7 +61,7 @@ async function parseEmail({
       to: [
         {
           address: realTo,
-          name: email.to?.find(to => to.address === realTo)?.name ?? '',
+          name: email.to?.find((to) => to.address === realTo)?.name ?? '',
         },
       ],
       from: {
@@ -86,10 +118,10 @@ function serializeError(error: unknown) {
 }
 
 const logger = createLogger({ namespace: 'email-proxy' });
-const createRequestId = ({ now = new Date() }: { now?: Date } = {}) => `req_${now.getTime()}${Math.random().toString(36).substring(2, 15)}`;
+const createRequestId = ({ now = new Date() }: { now?: Date } = {}) =>
+  `req_${now.getTime()}${Math.random().toString(36).substring(2, 15)}`;
 
-const HTTP_ONLY_BODY
-  = 'not serving HTTP';
+const HTTP_ONLY_BODY = 'not serving HTTP';
 
 export default {
   async fetch(_request: Request): Promise<Response> {
@@ -110,17 +142,20 @@ export default {
         realFrom: message.from,
       });
 
-      logger.info({
-        from: email.from,
-        originalFrom: email.originalFrom,
-        to: email.to,
-        originalTo: email.originalTo,
-        requestId,
-        rawSize: message.rawSize,
-      }, 'Received email');
+      logger.info(
+        {
+          from: email.from,
+          originalFrom: email.originalFrom,
+          to: email.to,
+          originalTo: email.originalTo,
+          requestId,
+          rawSize: message.rawSize,
+        },
+        'Received email',
+      );
 
       const response = await triggerWebhook({
-        email,
+        email: toWebhookEmail(email),
         webhookUrl,
         webhookSecret,
         httpClient: resolveWebhookFetch(env),
@@ -128,7 +163,7 @@ export default {
 
       if (!response.ok) {
         const bodyPreview = await response.text().then(
-          t => t.slice(0, 500),
+          (t) => t.slice(0, 500),
           () => '',
         );
         throw new Error(
@@ -138,12 +173,15 @@ export default {
 
       logger.info({ requestId }, 'Webhook triggered successfully');
     } catch (error) {
-      logger.error({
-        requestId,
-        rcptTo: message.to,
-        rawSize: message.rawSize,
-        ...serializeError(error),
-      }, 'Email worker failed');
+      logger.error(
+        {
+          requestId,
+          rcptTo: message.to,
+          rawSize: message.rawSize,
+          ...serializeError(error),
+        },
+        'Email worker failed',
+      );
       throw error;
     }
   },
