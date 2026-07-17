@@ -3,7 +3,7 @@
   "type": "module",
   "version": "1.0.3",
   "packageManager": "pnpm@9.11.0",
-  "description": "Email to HTTP proxy for Papra document ingestion",
+  "description": "Cloudflare Email Worker that forwards inbound mail to Papra, with optional Cloudflare Zero Trust (Access) service-token support for protected origins",
   "author": "Corentin Thomasset <corentinth@proton.me> (https://corentin.tech)",
   "license": "MIT",
   "repository": {
@@ -20,7 +20,10 @@
     "document",
     "ingestion",
     "cloudflare",
-    "workers"
+    "workers",
+    "zero-trust",
+    "cloudflare-access",
+    "service-token"
   ],
   "scripts": {
     "dev": "wrangler dev",
