@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!README.md"]
+    "includes": ["**", "!README.md", "!worker-configuration.d.ts"]
   },
   "formatter": {
     "enabled": true,

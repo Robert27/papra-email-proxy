@@ -6,12 +6,13 @@
   "description": "Cloudflare Email Worker that forwards inbound mail to Papra, with optional Cloudflare Zero Trust (Access) service-token support for protected origins",
   "author": "Corentin Thomasset <corentinth@proton.me> (https://corentin.tech)",
   "license": "MIT",
+  "homepage": "https://github.com/Robert27/papra-email-proxy",
   "repository": {
     "type": "git",
-    "url": "https://github.com/papra-hq/email-proxy"
+    "url": "https://github.com/Robert27/papra-email-proxy"
   },
   "bugs": {
-    "url": "https://github.com/papra-hq/email-proxy/issues"
+    "url": "https://github.com/Robert27/papra-email-proxy/issues"
   },
   "keywords": [
     "email",
@@ -31,7 +32,8 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "typecheck": "tsc --noEmit",
+    "cf-types": "wrangler types",
+    "typecheck": "wrangler types --check && tsc --noEmit",
     "build": "wrangler build",
     "release": "bumpp --commit --tag --push"
   },
@@ -42,7 +44,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
-    "@cloudflare/workers-types": "^5.20260717.1",
     "bumpp": "^11.1.0",
     "typescript": "^7.0.2",
     "wrangler": "^4.112.0"

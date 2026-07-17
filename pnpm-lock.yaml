@@ -21,9 +21,6 @@ importers:
       '@biomejs/biome':
         specifier: ^2.5.4
         version: 2.5.4
-      '@cloudflare/workers-types':
-        specifier: ^5.20260717.1
-        version: 5.20260717.1
       bumpp:
         specifier: ^11.1.0
         version: 11.1.0
@@ -827,7 +824,8 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20260714.1':
     optional: true
 
-  '@cloudflare/workers-types@5.20260717.1': {}
+  '@cloudflare/workers-types@5.20260717.1':
+    optional: true
 
   '@crowlog/logger@2.2.2': {}
 

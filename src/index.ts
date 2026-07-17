@@ -2,7 +2,8 @@ import { createLogger } from '@crowlog/logger';
 import { triggerWebhook } from '@owlrelay/webhook';
 import type { Address, Email } from 'postal-mime';
 import PostalMime from 'postal-mime';
-import type { Env } from './types';
+import packageJson from '../package.json';
+import './types';
 
 type ParsedEmail = Omit<Email, 'from'> & {
   from: Address;
@@ -72,17 +73,56 @@ async function parseEmail({
   };
 }
 
+class PermanentEmailError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PermanentEmailError';
+  }
+}
+
 function parseConfig({ env }: { env: Env }) {
   const webhookUrl = env.WEBHOOK_URL;
   const webhookSecret = env.WEBHOOK_SECRET;
 
   if (!webhookUrl || !webhookSecret) {
-    throw new Error('Missing required configuration: WEBHOOK_URL and WEBHOOK_SECRET');
+    throw new PermanentEmailError('Missing required configuration: WEBHOOK_URL and WEBHOOK_SECRET');
   }
 
   return {
     webhookUrl,
     webhookSecret,
+  };
+}
+
+function validateAccessConfig({ env }: { env: Env }) {
+  const hasClientId = Boolean(env.CF_ACCESS_CLIENT_ID);
+  const hasClientSecret = Boolean(env.CF_ACCESS_CLIENT_SECRET);
+
+  if (hasClientId !== hasClientSecret) {
+    throw new PermanentEmailError(
+      'Incomplete Cloudflare Access configuration: set both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET, or leave both unset',
+    );
+  }
+}
+
+function summarizeAttachments(attachments: ParsedEmail['attachments']) {
+  const items = attachments ?? [];
+
+  return {
+    attachmentCount: items.length,
+    attachmentBytes: items.reduce((total, attachment) => {
+      const { content } = attachment;
+
+      if (typeof content === 'string') {
+        return total + content.length;
+      }
+
+      if (content instanceof ArrayBuffer) {
+        return total + content.byteLength;
+      }
+
+      return total + content.byteLength;
+    }, 0),
   };
 }
 
@@ -123,24 +163,86 @@ const createRequestId = ({ now = new Date() }: { now?: Date } = {}) =>
 
 const HTTP_ONLY_BODY = 'not serving HTTP';
 
+type HealthCheck = {
+  ok: boolean;
+  message?: string;
+};
+
+function getConfigHealth(env: Env) {
+  const hasWebhookUrl = Boolean(env.WEBHOOK_URL);
+  const hasWebhookSecret = Boolean(env.WEBHOOK_SECRET);
+  const hasClientId = Boolean(env.CF_ACCESS_CLIENT_ID);
+  const hasClientSecret = Boolean(env.CF_ACCESS_CLIENT_SECRET);
+  const hasCompleteAccessConfig = hasClientId === hasClientSecret;
+
+  const checks = {
+    webhookUrl: {
+      ok: hasWebhookUrl,
+      ...(hasWebhookUrl ? {} : { message: 'WEBHOOK_URL is not set' }),
+    },
+    webhookSecret: {
+      ok: hasWebhookSecret,
+      ...(hasWebhookSecret ? {} : { message: 'WEBHOOK_SECRET is not set' }),
+    },
+    accessConfig: {
+      ok: hasCompleteAccessConfig,
+      ...(hasCompleteAccessConfig
+        ? {}
+        : { message: 'Set both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET, or leave both unset' }),
+    },
+  } satisfies Record<string, HealthCheck>;
+
+  return {
+    ok: checks.webhookUrl.ok && checks.webhookSecret.ok && checks.accessConfig.ok,
+    checks,
+  };
+}
+
+function handleFetch(request: Request, env: Env): Response {
+  const url = new URL(request.url);
+
+  if (request.method === 'GET' && url.pathname === '/health') {
+    const { ok, checks } = getConfigHealth(env);
+
+    return Response.json(
+      {
+        status: ok ? 'ok' : 'unhealthy',
+        version: packageJson.version,
+        checks,
+      },
+      {
+        status: ok ? 200 : 503,
+        headers: { 'cache-control': 'no-store' },
+      },
+    );
+  }
+
+  return new Response(HTTP_ONLY_BODY, {
+    status: 200,
+    headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+  });
+}
+
 export default {
-  async fetch(_request: Request): Promise<Response> {
-    return new Response(HTTP_ONLY_BODY, {
-      status: 200,
-      headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
-    });
+  fetch(request: Request, env: Env): Response {
+    return handleFetch(request, env);
   },
 
   async email(message: ForwardableEmailMessage, env: Env): Promise<void> {
     const requestId = createRequestId();
+    const messageId = message.headers.get('message-id') ?? undefined;
+    const headerSubject = message.headers.get('subject') ?? undefined;
 
     try {
       const { webhookUrl, webhookSecret } = parseConfig({ env });
+      validateAccessConfig({ env });
       const { email } = await parseEmail({
         rawMessage: message.raw,
         realTo: message.to,
         realFrom: message.from,
       });
+
+      const { attachmentCount, attachmentBytes } = summarizeAttachments(email.attachments);
 
       logger.info(
         {
@@ -149,6 +251,10 @@ export default {
           to: email.to,
           originalTo: email.originalTo,
           requestId,
+          messageId,
+          subject: email.subject ?? headerSubject,
+          attachmentCount,
+          attachmentBytes,
           rawSize: message.rawSize,
         },
         'Received email',
@@ -166,22 +272,45 @@ export default {
           (t) => t.slice(0, 500),
           () => '',
         );
-        throw new Error(
-          `Webhook HTTP ${response.status} ${response.statusText}${bodyPreview ? `: ${bodyPreview}` : ''}`,
-        );
+        const detail = `Webhook HTTP ${response.status} ${response.statusText}${bodyPreview ? `: ${bodyPreview}` : ''}`;
+
+        if (response.status >= 400 && response.status < 500) {
+          logger.error(
+            {
+              requestId,
+              messageId,
+              subject: email.subject ?? headerSubject,
+              webhookStatus: response.status,
+              bodyPreview: bodyPreview || undefined,
+            },
+            'Webhook rejected permanently',
+          );
+          message.setReject(detail);
+          return;
+        }
+
+        throw new Error(detail);
       }
 
-      logger.info({ requestId }, 'Webhook triggered successfully');
+      logger.info({ requestId, messageId, webhookStatus: response.status }, 'Webhook triggered successfully');
     } catch (error) {
       logger.error(
         {
           requestId,
+          messageId,
+          subject: headerSubject,
           rcptTo: message.to,
           rawSize: message.rawSize,
           ...serializeError(error),
         },
         'Email worker failed',
       );
+
+      if (error instanceof PermanentEmailError) {
+        message.setReject(error.message);
+        return;
+      }
+
       throw error;
     }
   },
