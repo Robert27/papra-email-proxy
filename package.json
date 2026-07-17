@@ -34,6 +34,9 @@
     "format": "biome format --write .",
     "cf-types": "wrangler types",
     "typecheck": "wrangler types --check && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "build": "wrangler build",
     "release": "bumpp --commit --tag --push"
   },
@@ -44,8 +47,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
+    "@vitest/coverage-v8": "^3.2.4",
     "bumpp": "^11.1.0",
     "typescript": "^7.0.2",
+    "vitest": "^3.2.4",
     "wrangler": "^4.112.0"
   }
 }

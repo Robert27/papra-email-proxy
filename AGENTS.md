@@ -19,11 +19,13 @@ pnpm dev              # local worker (needs .dev.vars)
 pnpm lint             # biome check .
 pnpm lint:fix         # biome check --write .
 pnpm typecheck        # tsc --noEmit
+pnpm test             # vitest run
+pnpm test:coverage    # vitest run --coverage (100% thresholds)
 pnpm build            # wrangler build
 pnpm deploy           # wrangler deploy
 ```
 
-Run `pnpm lint`, `pnpm typecheck`, and `pnpm build` before finishing changes. CI runs all three on every PR.
+Run `pnpm lint`, `pnpm typecheck`, `pnpm test:coverage`, and `pnpm build` before finishing changes. CI runs all four on every PR.
 
 ## Architecture
 
@@ -69,7 +71,7 @@ Email Routing → Worker.email() → parseEmail() → triggerWebhook() → Papra
 ## Scope and change discipline
 
 - Keep changes minimal; this is a small worker (~200 lines).
-- No test suite today — rely on `typecheck`, Biome, and `wrangler build`.
+- Unit tests live in `src/index.test.ts` (Vitest). Coverage thresholds are 100% for `src/**/*.ts`.
 - Do not commit `.dev.vars`, `.env`, or other secrets.
 - Do not create commits or open PRs unless explicitly asked.
 

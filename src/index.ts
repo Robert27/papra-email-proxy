@@ -29,7 +29,7 @@ function toWebhookEmail(email: ParsedEmail): WebhookEmail {
     subject: email.subject,
     text: email.text,
     html: email.html,
-    attachments: email.attachments.map((attachment) => ({
+    attachments: (email.attachments ?? []).map((attachment) => ({
       filename: attachment.filename,
       mimeType: attachment.mimeType,
       content: toWebhookAttachmentContent(attachment.content),
