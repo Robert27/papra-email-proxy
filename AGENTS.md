@@ -76,3 +76,5 @@ Email Routing → Worker.email() → parseEmail() → triggerWebhook() → Papra
 ## Dependency updates
 
 Renovate is configured with `customManagers:biomeVersions` so `biome.json` `$schema` stays in sync when `@biomejs/biome` is bumped.
+
+`pnpm-workspace.yaml` sets `minimumReleaseAge: 1440` (24 hours), matching Renovate’s `minimumReleaseAge: "1 day"`. Freshly published packages are blocked until they age out.
