@@ -2,7 +2,7 @@
   "name": "papra-email-proxy",
   "type": "module",
   "version": "1.0.3",
-  "packageManager": "pnpm@9.15.9",
+  "packageManager": "pnpm@11.13.1",
   "description": "Cloudflare Email Worker that forwards inbound mail to Papra, with optional Cloudflare Zero Trust (Access) service-token support for protected origins",
   "author": "Corentin Thomasset <corentinth@proton.me> (https://corentin.tech)",
   "license": "MIT",
