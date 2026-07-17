@@ -31,5 +31,6 @@ logs
 
 .wrangler
 coverage
+test-report.junit.xml
 cache
 .zed

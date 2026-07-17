@@ -1,5 +1,7 @@
 # Papra Email Proxy
 
+[![codecov](https://codecov.io/gh/Robert27/papra-email-proxy/graph/badge.svg?token=NNC7YQEQOQ)](https://codecov.io/gh/Robert27/papra-email-proxy)
+
 **Forward inbound email to your self-hosted [Papra](https://papra.app) instance via [Cloudflare Email Workers](https://developers.cloudflare.com/email-routing/email-workers/) — with first-class support for [Cloudflare Zero Trust (Access)](https://developers.cloudflare.com/cloudflare-one/).**
 
 A fork of the official [papra-hq/email-proxy](https://github.com/papra-hq/email-proxy) that adds optional **Access service-token authentication** on outbound webhook calls, so Papra can sit behind Zero Trust without breaking email ingestion.
