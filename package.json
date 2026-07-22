@@ -46,11 +46,11 @@
     "postal-mime": "^2.7.5"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.4",
+    "@biomejs/biome": "^2.5.5",
     "@vitest/coverage-v8": "^4.1.10",
     "bumpp": "^11.1.0",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10",
-    "wrangler": "^4.112.0"
+    "wrangler": "^4.113.0"
   }
 }
